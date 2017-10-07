@@ -7,15 +7,14 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
 import java.io.IOException;
 
-/**
- * 使用MapReduce开发WordCount应用程序
- */
-public class WordCountApp {
+public class PartitionerApp {
     /**
      * Map:读取输入的文件
      */
@@ -27,11 +26,7 @@ public class WordCountApp {
             String line = value.toString();
             //按照指定分隔符进行拆分
             String[] words = line.split(" ");
-
-            for(String word : words) {
-                //通过上下文把map的处理结果输出
-                context.write(new Text(word),one);
-            }
+            context.write(new Text(words[0]),new LongWritable(Long.parseLong(words[1])));
         }
     }
 
@@ -51,6 +46,22 @@ public class WordCountApp {
         }
     }
 
+    public static class MyPartitioner extends Partitioner<Text,LongWritable>{
+        @Override
+        public int getPartition(Text key, LongWritable value, int numPartitions) {
+            if(key.toString().equals("xiaomi")){
+                return 0;
+            }
+            if(key.toString().equals("huawei")){
+                return 1;
+            }
+            if(key.toString().equals("iphone7")){
+                return 2;
+            }
+            return 3;
+        }
+    }
+
     /**
      * 定义Driver:封装了MapReduce作业的所有信息
      */
@@ -67,7 +78,7 @@ public class WordCountApp {
         //创建Job
         Job job = Job.getInstance(configuration,"wordcount");
         //设置job的处理类
-        job.setJarByClass(WordCountApp.class);
+        job.setJarByClass(PartitionerApp.class);
         //设置作业处理的输入路径
         FileInputFormat.setInputPaths(job,new Path(args[0]));
 
@@ -81,7 +92,10 @@ public class WordCountApp {
         job.setReducerClass(MyReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
-
+        //设置job的partition
+        job.setPartitionerClass(MyPartitioner.class);
+        //设置4个reducer,每个分区一个
+        job.setNumReduceTasks(4);
         //设置作业处理的输出路径
         FileOutputFormat.setOutputPath(job,new Path(args[1]));
 

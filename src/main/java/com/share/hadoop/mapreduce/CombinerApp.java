@@ -10,12 +10,14 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
 import java.io.IOException;
 
 /**
  * 使用MapReduce开发WordCount应用程序
+ * 场景:适用于求和、次数，不适合求平均数
  */
-public class WordCountApp {
+public class CombinerApp {
     /**
      * Map:读取输入的文件
      */
@@ -67,7 +69,7 @@ public class WordCountApp {
         //创建Job
         Job job = Job.getInstance(configuration,"wordcount");
         //设置job的处理类
-        job.setJarByClass(WordCountApp.class);
+        job.setJarByClass(CombinerApp.class);
         //设置作业处理的输入路径
         FileInputFormat.setInputPaths(job,new Path(args[0]));
 
@@ -81,7 +83,8 @@ public class WordCountApp {
         job.setReducerClass(MyReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
-
+        //通过job设置combiner处理类，逻辑上和我们的reduce是一模一样的
+        job.setCombinerClass(MyReducer.class);
         //设置作业处理的输出路径
         FileOutputFormat.setOutputPath(job,new Path(args[1]));
 
